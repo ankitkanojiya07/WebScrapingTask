@@ -1,58 +1,58 @@
 import requests
 from lxml import html
 from PIL import Image
-import json
 from io import BytesIO
+import json
 
-class TINXSYSWebScraper:
+class TinxsysScraper:
     def __init__(self, tin_number):
-        self.url = "https://tinxsys.com/TinxsysInternetWeb/searchByTin_Inter.jsp"
+        self.base_url = "https://tinxsys.com/TinxsysInternetWeb/searchByTin_Inter.jsp"
         self.tin_number = tin_number
         self.session = requests.Session()
-
-    def fetch_captcha(self):
-        response = self.session.get(self.url)
+    
+    def get_captcha(self):
+        response = self.session.get(self.base_url)
         tree = html.fromstring(response.content)
-        captcha_image_url = tree.xpath('//img[@id="captchaImg"]/@src')[0]
-        captcha_image_response = self.session.get(captcha_image_url)
-        img = Image.open(BytesIO(captcha_image_response.content))
+        captcha_url = tree.xpath('//img[@id="captchaImg"]/@src')[0]
+        captcha_response = self.session.get(f'https://tinxsys.com{captcha_url}', stream=True)
+        img = Image.open(BytesIO(captcha_response.content))
         img.show()
-        captcha_text = input("Enter CAPTCHA: ")
-        return captcha_text
-
-    def get_data(self):
-        captcha_text = self.fetch_captcha()
+        captcha = input("Please enter CAPTCHA: ")
+        return captcha
+    
+    def scrape(self):
+        captcha = self.get_captcha()
         payload = {
             'tinNumber': self.tin_number,
-            'captchaText': captcha_text
+            'captcha': captcha
         }
-        response = self.session.post(self.url, data=payload)
+        response = self.session.post(self.base_url, data=payload)
         tree = html.fromstring(response.content)
-        
+        return self.parse_data(tree)
+    
+    def parse_data(self, tree):
         data = {
             'tin_number': self.tin_number,
-            'cst_number': self.extract_data(tree, '//span[@id="cstNumber"]/text()'),
-            'dealer_name': self.extract_data(tree, '//span[@id="dealerName"]/text()'),
-            'dealer_address': self.extract_data(tree, '//span[@id="dealerAddress"]/text()'),
-            'state_name': self.extract_data(tree, '//span[@id="stateName"]/text()'),
-            'pan_number': self.extract_data(tree, '//span[@id="panNumber"]/text()'),
-            'registration_date': self.extract_data(tree, '//span[@id="registrationDate"]/text()'),
-            'valid_upto': self.extract_data(tree, '//span[@id="validUpto"]/text()'),
-            'registration_status': self.extract_data(tree, '//span[@id="registrationStatus"]/text()')
+            'cst_number': self.extract_text(tree, '//span[@id="cstNumberId"]/text()'),
+            'dealer_name': self.extract_text(tree, '//span[@id="dealerNameId"]/text()'),
+            'dealer_address': self.extract_text(tree, '//span[@id="dealerAddressId"]/text()'),
+            'state_name': self.extract_text(tree, '//span[@id="stateNameId"]/text()'),
+            'pan_number': self.extract_text(tree, '//span[@id="panNumberId"]/text()'),
+            'registration_date': self.extract_text(tree, '//span[@id="dateOfRegId"]/text()'),
+            'valid_upto': self.extract_text(tree, '//span[@id="validUptoId"]/text()'),
+            'registration_status': self.extract_text(tree, '//span[@id="regStatusId"]/text()'),
         }
         return data
-
-    def extract_data(self, tree, xpath_expr):
-        result = tree.xpath(xpath_expr)
+    
+    def extract_text(self, tree, xpath):
+        result = tree.xpath(xpath)
         return result[0].strip() if result else None
 
-    def save_to_json(self, data, filename='data.json'):
-        with open(filename, 'w') as json_file:
-            json.dump(data, json_file, indent=4)
+    def to_json(self, data):
+        return json.dumps(data, indent=4)
 
 if __name__ == "__main__":
-    tin_number = "21711100073"
-    scraper = TINXSYSWebScraper(tin_number)
-    data = scraper.get_data()
-    print(json.dumps(data, indent=4))
-    scraper.save_to_json(data)
+    tin_number = "09137500718"
+    scraper = TinxsysScraper(tin_number)
+    data = scraper.scrape()
+    print(scraper.to_json(data))
