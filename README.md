@@ -43,5 +43,19 @@ Here is an example of how to run the script and the expected output:
 
 Set the `tin_number` variable in the script:
 
-```python
+
 tin_number = "09137500718"
+
+### output
+
+{
+    "tin_number": "09137500718",
+    "cst_number": "09137500718C",
+    "dealer_name": "M/S AGMOTEX FABRICS LIMITED",
+    "dealer_address": "59/36 BIRHANA ROAD KANPUR.",
+    "state_name": "Uttar Pradesh",
+    "pan_number": "AABCA6099H",
+    "registration_date": "1994-04-29",
+    "valid_upto": "2015-01-28",
+    "registration_status": "Active"
+}
